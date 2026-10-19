@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="seq_clinic_appointment" model="ir.sequence">
+            <field name="name">Séquence Rendez-vous Médical</field>
+            <field name="code">clinic.appointment</field>
+            <field name="prefix">APT/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

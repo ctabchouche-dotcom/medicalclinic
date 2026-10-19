@@ -1,0 +1,54 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  clinic:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U odoo"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: medicalclinic
+      - uses: actions/checkout@v4
+        with:
+          repository: odoo/odoo
+          ref: 19.0
+          path: odoo
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install system libraries
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev libpq-dev libjpeg-dev zlib1g-dev
+      - name: Install Python dependencies
+        run: pip install -r odoo/requirements.txt
+      - name: Run medicalclinic tests
+        run: >
+          python odoo/odoo-bin
+          --addons-path=odoo/addons,${{ github.workspace }}
+          -d clinic_ci
+          -i medicalclinic
+          --test-enable
+          --test-tags /medicalclinic
+          --stop-after-init
+          --without-demo=all
+          --db_host=127.0.0.1
+          --db_port=5432
+          --db_user=odoo
+          --db_password=odoo

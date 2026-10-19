@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_clinic_prescription" model="ir.actions.report">
+        <field name="name">Ordonnance</field>
+        <field name="model">clinic.prescription</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">medicalclinic.report_prescription</field>
+        <field name="report_file">medicalclinic.report_prescription</field>
+        <field name="print_report_name">'Ordonnance_%s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_clinic_prescription"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <function model="clinic.prescription" name="_configure_prescription_mail_template"/>
+</odoo>

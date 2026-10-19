@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_lab_results_template" name="Résultats d'Analyse">
+        <t t-call="web.layout">
+            <div class="container mt-4 mb-5">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">Laboratoire d'Analyses Médicales</h3>
+                    </div>
+                    <div class="card-body">
+                        <h5>Patient : <t t-out="lab_request.patient_id.name"/></h5>
+                        <p><strong>Référence :</strong> <t t-out="lab_request.name"/></p>
+                        <p><strong>Date :</strong> <t t-out="lab_request.date"/></p>
+                        <p><strong>Médecin Prescripteur :</strong> Dr. <t t-out="lab_request.doctor_id.name"/></p>
+
+                        <hr/>
+                        <h4>Résultats des Analyses</h4>
+                        <table class="table table-bordered table-sm mt-3">
+                            <thead>
+                                <tr>
+                                    <th>Bilan</th>
+                                    <th>Paramètre</th>
+                                    <th>Résultat</th>
+                                    <th>Unité</th>
+                                    <th>Valeurs de référence</th>
+                                    <th>Interprétation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="lab_request.exam_lines()" t-as="line">
+                                    <td t-out="line['exam']"/>
+                                    <td t-out="line['label']"/>
+                                    <td t-out="line['value']"/>
+                                    <td t-out="line['unit']"/>
+                                    <td>
+                                        <t t-out="line['reference']"/>
+                                        <div t-if="line['note']" class="text-muted small" t-out="line['note']"/>
+                                    </td>
+                                    <td t-out="line['flag_label']"/>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

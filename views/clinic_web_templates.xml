@@ -1,0 +1,656 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="clinic_header">
+        <header class="clinic-top">
+            <a class="clinic-brand" t-att-href="home_url or '/clinic'">
+                <span class="clinic-mark" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" width="28" height="28">
+                        <rect x="13" y="4" width="6" height="24" rx="1.5"/>
+                        <rect x="4" y="13" width="24" height="6" rx="1.5"/>
+                    </svg>
+                </span>
+                <span>
+                    <strong t-out="company"/>
+                    <small>Espace de travail</small>
+                </span>
+            </a>
+            <nav class="clinic-roles" t-if="len(roles) &gt; 1" aria-label="Rôle">
+                <a t-foreach="roles" t-as="item"
+                   t-att-href="item['url']"
+                   t-att-class="'is-active' if item['key'] == role else None"
+                   t-out="item['label']"/>
+            </nav>
+            <div class="clinic-user">
+                <span class="clinic-pill" t-out="role_label"/>
+                <span class="clinic-user-name" t-out="user_name"/>
+                <form action="/clinic/logout" method="post">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <button type="submit" class="btn ghost">Déconnexion</button>
+                </form>
+            </div>
+        </header>
+    </template>
+
+    <template id="clinic_page">
+        <t t-call="web.layout">
+            <t t-set="title" t-value="page_title or board_title or 'Espace clinique'"/>
+            <t t-set="head">
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <link rel="stylesheet" href="/medicalclinic/static/src/css/clinic_web.css"/>
+            </t>
+            <div class="clinic-app" t-att-data-role="role" t-att-data-tab="tab or ''" t-att-data-open="open_dialog or ''">
+                <t t-call="medicalclinic.clinic_header"/>
+                <t t-out="0"/>
+                <p class="clinic-toast" hidden="hidden" role="status"></p>
+            </div>
+            <script src="/medicalclinic/static/src/js/clinic_web.js"></script>
+        </t>
+    </template>
+
+    <template id="clinic_login">
+        <t t-call="web.layout">
+            <t t-set="title">Connexion — espace clinique</t>
+            <t t-set="head">
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <link rel="stylesheet" href="/medicalclinic/static/src/css/clinic_web.css"/>
+            </t>
+            <main class="clinic-login">
+                <section class="clinic-login-copy">
+                    <p class="clinic-kicker">Clinique</p>
+                    <h1 t-out="company"/>
+                    <p>Réception, médecins et laboratoire suivent les dossiers sur un tableau kanban.</p>
+                    <ul>
+                        <li>Réception : patients et rendez-vous</li>
+                        <li>Médecin : consultations et prescriptions</li>
+                        <li>Laboratoire : saisie des résultats</li>
+                    </ul>
+                </section>
+                <section class="clinic-login-card">
+                    <h2>Connexion</h2>
+                    <p class="clinic-muted">Utilisez le compte qui vous a été remis.</p>
+                    <p class="clinic-alert" t-if="error" role="alert" t-out="error"/>
+                    <form action="/clinic/login" method="post">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <label for="clinic-login-id">Identifiant</label>
+                        <input id="clinic-login-id" type="text" name="login" required="required" autocomplete="username" t-att-value="login"/>
+                        <label for="clinic-login-pw">Mot de passe</label>
+                        <input id="clinic-login-pw" type="password" name="password" required="required" autocomplete="current-password"/>
+                        <button type="submit" class="btn primary wide">Entrer</button>
+                    </form>
+                    <p class="clinic-login-admin">
+                        <a href="/web/login">Médecin principal et administration : interface Odoo</a>
+                    </p>
+                </section>
+            </main>
+        </t>
+    </template>
+
+    <template id="clinic_board">
+        <t t-call="medicalclinic.clinic_page">
+            <main class="clinic-main">
+                <div class="clinic-toolbar">
+                    <div>
+                        <h1 t-out="board_title"/>
+                        <p class="clinic-muted" t-out="board_hint"/>
+                    </div>
+                    <form class="clinic-search" action="/clinic" method="get">
+                        <input t-if="len(roles) &gt; 1" type="hidden" name="as" t-att-value="role"/>
+                        <input t-if="role == 'doctor' and tab == 'analyses'" type="hidden" name="tab" value="analyses"/>
+                        <label class="sr-only" for="clinic-q">Rechercher</label>
+                        <input id="clinic-q" type="search" name="q" placeholder="Patient, médecin, référence…" t-att-value="q"/>
+                        <button type="submit" class="btn ghost">Chercher</button>
+                    </form>
+                    <div class="clinic-toolbar-actions">
+                        <t t-if="role == 'receptionist'">
+                            <a class="btn ghost" t-att-href="slots_url">Créneaux</a>
+                            <button type="button" class="btn ghost" data-open="dlg-patient">Nouveau patient</button>
+                            <button type="button" class="btn primary" data-open="dlg-appointment">Nouveau rendez-vous</button>
+                        </t>
+                        <t t-if="role == 'doctor'">
+                            <a class="btn ghost" t-att-href="slots_url">Mes créneaux</a>
+                            <a t-att-class="'clinic-tab is-active' if tab != 'analyses' else 'clinic-tab'" t-att-href="consult_url">Consultations</a>
+                            <a t-att-class="'clinic-tab is-active' if tab == 'analyses' else 'clinic-tab'" t-att-href="analyses_url">Analyses</a>
+                            <button t-if="tab == 'analyses' and not profile_missing" type="button" class="btn primary" data-open="dlg-lab">Nouvelle demande</button>
+                        </t>
+                    </div>
+                </div>
+
+                <p class="clinic-alert" t-if="error" role="alert" t-out="error"/>
+                <p class="clinic-ok" t-if="message" role="status" t-out="message"/>
+                <p class="clinic-alert" t-if="profile_missing" role="alert">
+                    Votre compte n'est pas relié à une fiche médecin. Le manager doit renseigner le champ « Compte utilisateur » sur votre fiche.
+                </p>
+                <p class="clinic-muted" t-if="truncated">Seuls les 200 premiers dossiers sont affichés. Affinez la recherche.</p>
+
+                <section class="clinic-board" aria-label="Tableau kanban">
+                    <div t-foreach="columns" t-as="column" class="clinic-column" t-att-data-state="column['key']">
+                        <header>
+                            <h2 t-out="column['label']"/>
+                            <span t-out="column['count']"/>
+                        </header>
+                        <div class="clinic-column-body">
+                            <p class="clinic-empty" t-if="not column['cards']">Aucun dossier</p>
+                            <article t-foreach="column['cards']" t-as="card" class="clinic-card"
+                                     t-att-data-model="card['model']" t-att-data-id="card['id']" t-att-data-moves="card['moves']">
+                                <a class="clinic-card-link" t-att-href="card['href']">
+                                    <span class="clinic-ref" t-out="card['ref']"/>
+                                    <strong t-out="card['title']"/>
+                                    <span t-out="card['subtitle']"/>
+                                    <span t-if="card['meta']" class="clinic-meta" t-out="card['meta']"/>
+                                    <time t-out="card['when']"/>
+                                    <span t-if="card['note']" class="clinic-note" t-out="card['note']"/>
+                                </a>
+                                <div class="clinic-card-actions" t-if="card['actions']">
+                                    <t t-foreach="card['actions']" t-as="action">
+                                        <form action="/clinic/move" method="post">
+                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                            <input type="hidden" name="model" t-att-value="card['model']"/>
+                                            <input type="hidden" name="res_id" t-att-value="card['id']"/>
+                                            <input type="hidden" name="state" t-att-value="action['state']"/>
+                                            <input type="hidden" name="as" t-att-value="role"/>
+                                            <input t-if="tab" type="hidden" name="tab" t-att-value="tab"/>
+                                            <button type="submit" t-att-class="'btn primary' if action['primary'] else 'btn ghost'" t-out="action['label']"/>
+                                        </form>
+                                    </t>
+                                </div>
+                                <button t-if="card['moves']" type="button" class="clinic-grip" draggable="true" aria-label="Déplacer la carte">⋮⋮</button>
+                            </article>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <dialog id="dlg-patient" t-if="role == 'receptionist'">
+                <form action="/clinic/patient/create" method="post">
+                    <header>
+                        <h2>Nouveau patient</h2>
+                        <button type="button" class="btn ghost js-close" aria-label="Fermer">Fermer</button>
+                    </header>
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="as" t-att-value="role"/>
+                    <label for="patient-name">Nom complet</label>
+                    <input id="patient-name" name="name" required="required" autocomplete="name"/>
+                    <label for="patient-gender">Sexe</label>
+                    <select id="patient-gender" name="gender" required="required">
+                        <option value="">Choisir…</option>
+                        <option value="male">Masculin</option>
+                        <option value="female">Féminin</option>
+                    </select>
+                    <div class="clinic-form-grid">
+                        <div>
+                            <label for="patient-dob">Date de naissance</label>
+                            <input id="patient-dob" type="date" name="dob"/>
+                        </div>
+                        <div>
+                            <label for="patient-blood">Groupe sanguin</label>
+                            <select id="patient-blood" name="blood_group">
+                                <option value="">—</option>
+                                <option t-foreach="blood_groups" t-as="blood" t-att-value="blood" t-out="blood"/>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="clinic-form-grid">
+                        <div>
+                            <label for="patient-phone">Téléphone</label>
+                            <input id="patient-phone" name="phone" autocomplete="tel"/>
+                        </div>
+                        <div>
+                            <label for="patient-email">Email</label>
+                            <input id="patient-email" type="email" name="email" autocomplete="email"/>
+                        </div>
+                    </div>
+                    <footer>
+                        <button type="submit" class="btn primary">Enregistrer</button>
+                    </footer>
+                </form>
+            </dialog>
+
+            <dialog id="dlg-appointment" t-if="role == 'receptionist'">
+                <form action="/clinic/appointment/create" method="post">
+                    <header>
+                        <h2>Nouveau rendez-vous</h2>
+                        <button type="button" class="btn ghost js-close" aria-label="Fermer">Fermer</button>
+                    </header>
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="as" t-att-value="role"/>
+                    <label for="appt-patient">Patient</label>
+                    <select id="appt-patient" name="patient_id" required="required">
+                        <option value="">Choisir…</option>
+                        <option t-foreach="patients" t-as="patient" t-att-value="patient['id']" t-out="patient['name']"/>
+                    </select>
+                    <label for="appt-doctor">Médecin</label>
+                    <select id="appt-doctor" name="doctor_id" required="required">
+                        <option value="">Choisir…</option>
+                        <option t-foreach="doctors" t-as="doctor" t-att-value="doctor['id']" t-out="doctor['name']"/>
+                    </select>
+                    <label for="appt-date">Date et heure</label>
+                    <input id="appt-date" type="datetime-local" name="appointment_date" required="required"/>
+                    <label for="appt-notes">Motif</label>
+                    <textarea id="appt-notes" name="notes" rows="3" placeholder="Raison de la consultation"></textarea>
+                    <footer>
+                        <button type="submit" class="btn primary">Créer le rendez-vous</button>
+                    </footer>
+                </form>
+            </dialog>
+
+            <dialog id="dlg-lab" t-if="role == 'doctor'">
+                <form action="/clinic/lab/create" method="post">
+                    <header>
+                        <h2>Demande d'analyse</h2>
+                        <button type="button" class="btn ghost js-close" aria-label="Fermer">Fermer</button>
+                    </header>
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="as" t-att-value="role"/>
+                    <label for="lab-patient">Patient</label>
+                    <select id="lab-patient" name="patient_id" required="required">
+                        <option value="">Choisir…</option>
+                        <option t-foreach="patients" t-as="patient" t-att-value="patient['id']" t-out="patient['name']"/>
+                    </select>
+                    <label for="lab-appt">Rendez-vous associé</label>
+                    <select id="lab-appt" name="appointment_id">
+                        <option value="">Aucun</option>
+                        <option t-foreach="appointments" t-as="appt" t-att-value="appt['id']" t-out="appt['label']"/>
+                    </select>
+                    <fieldset>
+                        <legend>Examens</legend>
+                        <label t-foreach="exams" t-as="exam" class="clinic-check">
+                            <input type="checkbox" t-att-name="exam['check']" value="1"/>
+                            <span>
+                                <t t-out="exam['label']"/>
+                                <small t-if="exam.get('detail')" t-out="exam['detail']"/>
+                            </span>
+                        </label>
+                    </fieldset>
+                    <footer>
+                        <button type="submit" class="btn primary">Créer la demande</button>
+                    </footer>
+                </form>
+            </dialog>
+        </t>
+    </template>
+
+    <template id="clinic_appointment_page">
+        <t t-call="medicalclinic.clinic_page">
+            <main class="clinic-main clinic-detail">
+                <p><a class="clinic-back" t-att-href="back_url">Retour au tableau</a></p>
+                <p class="clinic-alert" t-if="error" role="alert" t-out="error"/>
+                <p class="clinic-ok" t-if="message" role="status" t-out="message"/>
+                <header class="clinic-detail-head">
+                    <div>
+                        <p class="clinic-ref" t-out="appointment.name"/>
+                        <h1 t-out="appointment.patient_id.name"/>
+                    </div>
+                    <span t-att-class="'clinic-state state-' + appointment.state" t-out="state_label"/>
+                </header>
+
+                <div class="clinic-detail-grid">
+                    <section>
+                        <h2>Rendez-vous</h2>
+                        <dl>
+                            <div><dt>Médecin</dt><dd t-out="appointment.doctor_id.name"/></div>
+                            <div><dt>Quand</dt><dd t-out="when"/></div>
+                            <div><dt>Téléphone</dt><dd t-out="appointment.patient_id.phone or '—'"/></div>
+                            <div><dt>Email</dt><dd t-out="appointment.patient_id.email or '—'"/></div>
+                        </dl>
+                        <t t-if="role == 'doctor'">
+                            <h2>Dossier</h2>
+                            <dl>
+                                <div><dt>Âge</dt><dd t-out="appointment.patient_id.age"/></div>
+                                <div><dt>Sexe</dt><dd t-out="gender or '—'"/></div>
+                                <div><dt>Groupe</dt><dd t-out="blood or '—'"/></div>
+                            </dl>
+                            <h3>Antécédents</h3>
+                            <p class="clinic-prose" t-out="appointment.patient_id.medical_history or 'Aucun antécédent saisi.'"/>
+                            <h3>Motif</h3>
+                            <p class="clinic-prose" t-out="appointment.notes or 'Aucun motif.'"/>
+                        </t>
+                    </section>
+
+                    <section>
+                        <t t-if="role == 'receptionist' and appointment.state in ('draft', 'confirmed')">
+                            <h2>Modifier</h2>
+                            <form t-att-action="'/clinic/appointment/%s/update' % appointment.id" method="post">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="as" t-att-value="role"/>
+                                <label for="edit-patient">Patient</label>
+                                <select id="edit-patient" name="patient_id" required="required">
+                                    <option t-foreach="patients" t-as="patient" t-att-value="patient['id']"
+                                            t-att-selected="patient['id'] == appointment.patient_id.id or None"
+                                            t-out="patient['name']"/>
+                                </select>
+                                <label for="edit-doctor">Médecin</label>
+                                <select id="edit-doctor" name="doctor_id" required="required">
+                                    <option t-foreach="doctors" t-as="doctor" t-att-value="doctor['id']"
+                                            t-att-selected="doctor['id'] == appointment.doctor_id.id or None"
+                                            t-out="doctor['name']"/>
+                                </select>
+                                <label for="edit-date">Date et heure</label>
+                                <input id="edit-date" type="datetime-local" name="appointment_date" required="required" t-att-value="when_input"/>
+                                <label for="edit-notes">Motif</label>
+                                <textarea id="edit-notes" name="notes" rows="4" t-out="appointment.notes or ''"/>
+                                <button type="submit" class="btn primary">Enregistrer</button>
+                            </form>
+                        </t>
+                        <t t-if="role == 'doctor'">
+                            <h2>Compte rendu</h2>
+                            <form t-if="appointment.state in ('confirmed', 'done')" t-att-action="'/clinic/appointment/%s/update' % appointment.id" method="post">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="as" t-att-value="role"/>
+                                <label class="sr-only" for="consult-notes">Compte rendu</label>
+                                <textarea id="consult-notes" name="consultation_notes" rows="6" t-out="appointment.consultation_notes or ''"/>
+                                <button type="submit" class="btn primary">Enregistrer le compte rendu</button>
+                            </form>
+                            <p t-else="" class="clinic-muted">Le compte rendu sera disponible une fois le rendez-vous confirmé.</p>
+
+                            <h2>Ordonnances</h2>
+                            <ul class="clinic-links" t-if="prescriptions">
+                                <li t-foreach="prescriptions" t-as="item">
+                                    <a t-att-href="item['href']"><t t-out="item['name']"/> — <t t-out="item['count']"/> médicament(s)</a>
+                                </li>
+                            </ul>
+                            <p t-else="" class="clinic-muted">Aucune ordonnance pour cette consultation.</p>
+                            <form t-if="appointment.state in ('confirmed', 'done')" t-att-action="'/clinic/appointment/%s/prescription' % appointment.id" method="post" class="clinic-card-actions">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="as" t-att-value="role"/>
+                                <button type="submit" class="btn primary">Nouvelle ordonnance</button>
+                            </form>
+
+                            <h2>Analyses liées</h2>
+                            <ul class="clinic-links" t-if="labs">
+                                <li t-foreach="labs" t-as="lab">
+                                    <a t-att-href="lab['href']"><t t-out="lab['name']"/> — <t t-out="lab['summary']"/></a>
+                                </li>
+                            </ul>
+                            <p t-else="" class="clinic-muted">Aucune analyse pour ce rendez-vous.</p>
+
+                            <t t-if="appointment.state in ('confirmed', 'done')">
+                                <h2>Prescrire</h2>
+                                <form action="/clinic/lab/create" method="post">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <input type="hidden" name="as" t-att-value="role"/>
+                                    <input type="hidden" name="patient_id" t-att-value="appointment.patient_id.id"/>
+                                    <input type="hidden" name="appointment_id" t-att-value="appointment.id"/>
+                                    <input type="hidden" name="next" t-att-value="next_url"/>
+                                    <fieldset>
+                                        <legend>Examens</legend>
+                                        <label t-foreach="exams" t-as="exam" class="clinic-check">
+                                            <input type="checkbox" t-att-name="exam['check']" value="1"/>
+                                            <span>
+                                                <t t-out="exam['label']"/>
+                                                <small t-if="exam.get('detail')" t-out="exam['detail']"/>
+                                            </span>
+                                        </label>
+                                    </fieldset>
+                                    <button type="submit" class="btn primary">Créer la demande</button>
+                                </form>
+                            </t>
+                        </t>
+
+                        <div class="clinic-card-actions detail-actions" t-if="actions">
+                            <t t-foreach="actions" t-as="action">
+                                <form action="/clinic/move" method="post">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <input type="hidden" name="model" value="appointment"/>
+                                    <input type="hidden" name="res_id" t-att-value="appointment.id"/>
+                                    <input type="hidden" name="state" t-att-value="action['state']"/>
+                                    <input type="hidden" name="as" t-att-value="role"/>
+                                    <input type="hidden" name="next" t-att-value="next_url"/>
+                                    <button type="submit" t-att-class="'btn primary' if action['primary'] else 'btn ghost'" t-out="action['label']"/>
+                                </form>
+                            </t>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </t>
+    </template>
+
+    <template id="clinic_prescription_page">
+        <t t-call="medicalclinic.clinic_page">
+            <main class="clinic-main clinic-detail">
+                <p><a class="clinic-back" t-att-href="back_url">Retour à la consultation</a></p>
+                <p class="clinic-alert" t-if="error" role="alert" t-out="error"/>
+                <p class="clinic-ok" t-if="message" role="status" t-out="message"/>
+                <header class="clinic-detail-head">
+                    <div>
+                        <p class="clinic-ref" t-out="prescription.name"/>
+                        <h1 t-out="prescription.patient_id.name"/>
+                    </div>
+                </header>
+                <div class="clinic-card-actions">
+                    <a class="btn ghost" t-att-href="pdf_url">Télécharger le PDF</a>
+                    <form t-att-action="'/clinic/prescription/%s/email' % prescription.id" method="post">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="as" t-att-value="role"/>
+                        <button type="submit" class="btn primary">Envoyer l'e-mail au patient</button>
+                    </form>
+                </div>
+                <div class="clinic-detail-grid">
+                    <section>
+                        <h2>Patient</h2>
+                        <dl>
+                            <div><dt>Âge</dt><dd><t t-out="prescription.patient_id.age"/> ans</dd></div>
+                            <div><dt>Sexe</dt><dd t-out="gender or '—'"/></div>
+                            <div><dt>Médecin</dt><dd t-out="prescription.doctor_id.name"/></div>
+                            <div><dt>Date</dt><dd t-out="when"/></div>
+                        </dl>
+                        <h2>Médicaments prescrits</h2>
+                        <table t-if="lines" class="clinic-results">
+                            <thead>
+                                <tr>
+                                    <th>Médicament</th>
+                                    <th>Posologie</th>
+                                    <th>Durée</th>
+                                    <th>Quantité</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="lines" t-as="line">
+                                    <th>
+                                        <t t-out="line['label']"/>
+                                        <small t-if="line['instructions']" t-out="line['instructions']"/>
+                                    </th>
+                                    <td t-out="line['dosage']"/>
+                                    <td t-out="line['duration'] or '—'"/>
+                                    <td t-out="line['quantity'] or '—'"/>
+                                    <td>
+                                        <form t-att-action="'/clinic/prescription/%s/save' % prescription.id" method="post">
+                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                            <input type="hidden" name="as" t-att-value="role"/>
+                                            <input type="hidden" name="action" value="remove"/>
+                                            <input type="hidden" name="line_id" t-att-value="line['id']"/>
+                                            <button type="submit" class="btn ghost">Retirer</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p t-else="" class="clinic-muted">Aucun médicament pour le moment.</p>
+                    </section>
+                    <section>
+                        <h2>Ajouter un médicament</h2>
+                        <form t-att-action="'/clinic/prescription/%s/save' % prescription.id" method="post">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="as" t-att-value="role"/>
+                            <input type="hidden" name="action" value="line"/>
+                            <label for="med-filter">Rechercher</label>
+                            <input id="med-filter" type="search" data-med-filter="1" placeholder="Antibiotique, amoxicilline, anti-inflammatoire…"/>
+                            <label for="med-select">Médicament</label>
+                            <select id="med-select" name="medication_id" required="required" size="8" data-med-select="1">
+                                <option value="">Choisir…</option>
+                                <option t-foreach="medications" t-as="med" t-att-value="med['id']" t-att-data-search="med['search']" t-out="med['label']"/>
+                            </select>
+                            <label for="dosage">Posologie</label>
+                            <input id="dosage" name="dosage" required="required" placeholder="1 comprimé 3 fois par jour"/>
+                            <div class="clinic-form-grid">
+                                <div>
+                                    <label for="duration">Durée</label>
+                                    <input id="duration" name="duration" placeholder="7 jours"/>
+                                </div>
+                                <div>
+                                    <label for="quantity">Quantité</label>
+                                    <input id="quantity" name="quantity" placeholder="1 boîte"/>
+                                </div>
+                            </div>
+                            <label for="instructions">Précisions</label>
+                            <input id="instructions" name="instructions" placeholder="Pendant les repas"/>
+                            <button type="submit" class="btn primary">Ajouter à l'ordonnance</button>
+                        </form>
+                        <h2>Conseils</h2>
+                        <form t-att-action="'/clinic/prescription/%s/save' % prescription.id" method="post">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="as" t-att-value="role"/>
+                            <input type="hidden" name="action" value="notes"/>
+                            <textarea name="notes" rows="4" t-out="prescription.notes or ''"/>
+                            <button type="submit" class="btn ghost">Enregistrer les conseils</button>
+                        </form>
+                    </section>
+                </div>
+            </main>
+        </t>
+    </template>
+
+    <template id="clinic_lab_page">
+        <t t-call="medicalclinic.clinic_page">
+            <main class="clinic-main clinic-detail">
+                <p><a class="clinic-back" t-att-href="back_url">Retour au tableau</a></p>
+                <p class="clinic-alert" t-if="error" role="alert" t-out="error"/>
+                <p class="clinic-ok" t-if="message" role="status" t-out="message"/>
+                <header class="clinic-detail-head">
+                    <div>
+                        <p class="clinic-ref" t-out="lab.name"/>
+                        <h1 t-out="lab.patient_id.name"/>
+                    </div>
+                    <span t-att-class="'clinic-state state-' + lab.state" t-out="state_label"/>
+                </header>
+                <div class="clinic-card-actions" t-if="role == 'lab'">
+                    <a class="btn ghost" t-att-href="pdf_url">Télécharger le PDF</a>
+                    <form t-att-action="'/clinic/lab/%s/email' % lab.id" method="post">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <input type="hidden" name="as" t-att-value="role"/>
+                        <button type="submit" class="btn primary">Envoyer l'e-mail au patient</button>
+                    </form>
+                </div>
+                <div class="clinic-detail-grid">
+                    <section>
+                        <h2>Demande</h2>
+                        <dl>
+                            <div><dt>Médecin</dt><dd t-out="lab.doctor_id.name"/></div>
+                            <div><dt>Date</dt><dd t-out="when"/></div>
+                            <div t-if="lab.appointment_id"><dt>Rendez-vous</dt><dd t-out="lab.appointment_id.name"/></div>
+                        </dl>
+                        <t t-if="not can_edit_results">
+                            <h2>Résultats</h2>
+                            <table t-if="lines" class="clinic-results">
+                                <thead>
+                                    <tr>
+                                        <th>Paramètre</th>
+                                        <th>Résultat</th>
+                                        <th>Unité</th>
+                                        <th>Référence</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="lines" t-as="line">
+                                        <th>
+                                            <span class="clinic-muted" t-out="line['exam']"/>
+                                            <br/>
+                                            <t t-out="line['label']"/>
+                                        </th>
+                                        <td t-out="line['value'] or '—'"/>
+                                        <td t-out="line['unit']"/>
+                                        <td>
+                                            <t t-out="line['reference']"/>
+                                            <small t-if="line['note']" t-out="line['note']"/>
+                                        </td>
+                                        <td t-att-class="'flag-' + line['flag'] if line['flag'] else ''" t-out="line['flag_label']"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p t-else="" class="clinic-muted">Aucun examen coché.</p>
+                            <p class="clinic-prose" t-if="lab.notes"><strong>Remarques. </strong><t t-out="lab.notes"/></p>
+                        </t>
+                    </section>
+                    <section>
+                        <t t-if="can_edit_checks">
+                            <h2>Examens à demander</h2>
+                            <form t-att-action="'/clinic/lab/%s/save' % lab.id" method="post">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="as" t-att-value="role"/>
+                                <fieldset>
+                                    <legend>Cocher les examens</legend>
+                                    <label t-foreach="exams" t-as="exam" class="clinic-check">
+                                        <input type="checkbox" t-att-name="exam['check']" value="1" t-att-checked="exam['checked'] or None"/>
+                                        <span>
+                                            <t t-out="exam['label']"/>
+                                            <small t-if="exam.get('detail')" t-out="exam['detail']"/>
+                                        </span>
+                                    </label>
+                                </fieldset>
+                                <div class="clinic-card-actions">
+                                    <button type="submit" name="action" value="save" class="btn ghost">Enregistrer</button>
+                                    <button type="submit" name="action" value="send" class="btn primary">Envoyer au laboratoire</button>
+                                </div>
+                            </form>
+                        </t>
+                        <t t-if="can_edit_results">
+                            <h2>Saisie des résultats</h2>
+                            <form t-att-action="'/clinic/lab/%s/save' % lab.id" method="post">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="as" t-att-value="role"/>
+                                <table t-if="lines" class="clinic-results">
+                                    <thead>
+                                        <tr>
+                                            <th>Paramètre</th>
+                                            <th>Résultat</th>
+                                            <th>Unité</th>
+                                            <th>Référence</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="lines" t-as="line">
+                                            <th>
+                                                <span class="clinic-muted" t-out="line['exam']"/>
+                                                <br/>
+                                                <label t-att-for="'line-%s' % line['id']" t-out="line['label']"/>
+                                            </th>
+                                            <td><input t-att-id="'line-%s' % line['id']" t-att-name="'line_%s' % line['id']" t-att-value="line['value']"/></td>
+                                            <td t-out="line['unit']"/>
+                                            <td>
+                                                <t t-out="line['reference']"/>
+                                                <small t-if="line['note']" t-out="line['note']"/>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <label for="lab-notes">Remarques</label>
+                                <textarea id="lab-notes" name="notes" rows="4" t-out="lab.notes or ''"/>
+                                <div class="clinic-card-actions">
+                                    <button type="submit" name="action" value="save" class="btn ghost">Enregistrer</button>
+                                    <button type="submit" name="action" value="done" class="btn primary">Valider les résultats</button>
+                                </div>
+                            </form>
+                        </t>
+                        <div class="clinic-card-actions detail-actions" t-if="actions and not can_edit_checks">
+                            <t t-foreach="actions" t-as="action">
+                                <form action="/clinic/move" method="post">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <input type="hidden" name="model" value="lab"/>
+                                    <input type="hidden" name="res_id" t-att-value="lab.id"/>
+                                    <input type="hidden" name="state" t-att-value="action['state']"/>
+                                    <input type="hidden" name="as" t-att-value="role"/>
+                                    <input type="hidden" name="next" t-att-value="next_url"/>
+                                    <button type="submit" t-att-class="'btn primary' if action['primary'] else 'btn ghost'" t-out="action['label']"/>
+                                </form>
+                            </t>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </t>
+    </template>
+
+</odoo>

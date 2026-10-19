@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_medical_clinic" model="ir.module.category">
+        <field name="name">Gestion de Clinique</field>
+        <field name="sequence">10</field>
+    </record>
+
+    <record model="res.groups.privilege" id="res_groups_privilege_clinic">
+        <field name="name">Clinique médicale</field>
+        <field name="sequence">10</field>
+        <field name="category_id" ref="module_category_medical_clinic"/>
+        <field name="placeholder">Aucun rôle</field>
+    </record>
+
+    <!-- Espace web /clinic : un seul de ces trois rôles par compte. -->
+    <record id="group_clinic_receptionist" model="res.groups">
+        <field name="name">Réceptionniste</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="res_groups_privilege_clinic"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">Se connecte sur l'espace web /clinic. Le tableau kanban couvre les patients et les rendez-vous. Pas d'accès au backend Odoo.</field>
+    </record>
+
+    <record id="group_clinic_lab" model="res.groups">
+        <field name="name">Laborantin</field>
+        <field name="sequence">20</field>
+        <field name="privilege_id" ref="res_groups_privilege_clinic"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">Se connecte sur l'espace web /clinic. Le kanban sert à saisir et valider les résultats. Pas d'accès au backend Odoo.</field>
+    </record>
+
+    <record id="group_clinic_doctor" model="res.groups">
+        <field name="name">Médecin</field>
+        <field name="sequence">30</field>
+        <field name="privilege_id" ref="res_groups_privilege_clinic"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">Se connecte sur l'espace web /clinic. Le kanban montre ses consultations et ses demandes d'analyses. Relier sa fiche médecin au compte. Pas d'accès au backend Odoo.</field>
+    </record>
+
+    <!-- Backend Odoo uniquement. -->
+    <record id="group_clinic_principal" model="res.groups">
+        <field name="name">Médecin principal</field>
+        <field name="sequence">40</field>
+        <field name="privilege_id" ref="res_groups_privilege_clinic"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">Travaille dans l'interface Odoo : patients, rendez-vous et laboratoire de toute la clinique. Ne passe pas par l'espace web.</field>
+    </record>
+
+    <record id="group_clinic_manager" model="res.groups">
+        <field name="name">Administrateur Clinique</field>
+        <field name="sequence">50</field>
+        <field name="privilege_id" ref="res_groups_privilege_clinic"/>
+        <field name="implied_ids" eval="[(6, 0, [ref('group_clinic_principal')])]"/>
+        <field name="comment">Travaille dans l'interface Odoo, y compris la configuration des médecins. Ne passe pas par l'espace web.</field>
+    </record>
+</odoo>

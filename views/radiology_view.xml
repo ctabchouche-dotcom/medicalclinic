@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_clinic_radiology_list" model="ir.ui.view">
+        <field name="name">clinic.radiology.request.list</field>
+        <field name="model">clinic.radiology.request</field>
+        <field name="arch" type="xml">
+            <list string="Radios" decoration-info="state == 'requested'" decoration-success="state == 'reported'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="patient_code"/>
+                <field name="patient_id"/>
+                <field name="region"/>
+                <field name="side"/>
+                <field name="doctor_id"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_clinic_radiology_form" model="ir.ui.view">
+        <field name="name">clinic.radiology.request.form</field>
+        <field name="model">clinic.radiology.request</field>
+        <field name="arch" type="xml">
+            <form string="Demande de radiographie">
+                <header>
+                    <button name="action_mark_image_received" type="object" string="Image reçue"
+                            class="oe_highlight" invisible="state != 'requested'"/>
+                    <button name="action_open_image" type="object" string="Ouvrir l'image"
+                            invisible="not study_url"/>
+                    <button name="action_sign_report" type="object" string="Valider le compte-rendu"
+                            class="oe_highlight" invisible="state != 'image_received'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="requested,image_received,reported"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Examen">
+                            <field name="patient_id" readonly="state != 'requested'"/>
+                            <field name="patient_code"/>
+                            <field name="doctor_id" readonly="state != 'requested'"/>
+                            <field name="appointment_id" readonly="state != 'requested'"/>
+                        </group>
+                        <group string="Cliché">
+                            <field name="date" readonly="state != 'requested'"/>
+                            <field name="region" readonly="state != 'requested'"/>
+                            <field name="side" readonly="state != 'requested'"/>
+                            <field name="study_url" readonly="state == 'reported'"/>
+                            <field name="study_uid" readonly="state == 'reported'"/>
+                            <field name="image_date"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Compte-rendu" name="report">
+                            <field name="report" placeholder="Compte-rendu du médecin..."
+                                   readonly="state == 'reported'"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_clinic_radiology_kanban" model="ir.ui.view">
+        <field name="name">clinic.radiology.request.kanban</field>
+        <field name="model">clinic.radiology.request</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state">
+                <field name="name"/>
+                <field name="patient_id"/>
+                <field name="patient_code"/>
+                <field name="region"/>
+                <field name="side"/>
+                <templates>
+                    <t t-name="card">
+                        <field name="name"/>
+                        <field name="patient_id"/>
+                        <div><field name="patient_code"/> · <field name="region"/> · <field name="side"/></div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_clinic_radiology_search" model="ir.ui.view">
+        <field name="name">clinic.radiology.request.search</field>
+        <field name="model">clinic.radiology.request</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="patient_id"/>
+                <field name="patient_code"/>
+                <field name="doctor_id"/>
+                <filter name="requested" string="En attente d'image" domain="[('state', '=', 'requested')]"/>
+                <filter name="received" string="Image reçue" domain="[('state', '=', 'image_received')]"/>
+                <filter name="reported" string="Compte-rendu" domain="[('state', '=', 'reported')]"/>
+                <filter name="group_state" string="Statut" context="{'group_by': 'state'}"/>
+                <filter name="group_region" string="Région" context="{'group_by': 'region'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_clinic_radiology" model="ir.actions.act_window">
+        <field name="name">Radios</field>
+        <field name="res_model">clinic.radiology.request</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_clinic_radiology_search"/>
+    </record>
+</odoo>

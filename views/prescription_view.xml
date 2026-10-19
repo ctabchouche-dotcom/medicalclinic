@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_clinic_medication_list" model="ir.ui.view">
+        <field name="name">clinic.medication.list</field>
+        <field name="model">clinic.medication</field>
+        <field name="arch" type="xml">
+            <list string="Médicaments">
+                <field name="name"/>
+                <field name="dci"/>
+                <field name="strength"/>
+                <field name="form"/>
+                <field name="drug_class"/>
+                <field name="route"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_clinic_medication_form" model="ir.ui.view">
+        <field name="name">clinic.medication.form</field>
+        <field name="model">clinic.medication</field>
+        <field name="arch" type="xml">
+            <form string="Médicament">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="dci"/>
+                            <field name="strength"/>
+                        </group>
+                        <group>
+                            <field name="form"/>
+                            <field name="route"/>
+                            <field name="drug_class"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_clinic_medication_search" model="ir.ui.view">
+        <field name="name">clinic.medication.search</field>
+        <field name="model">clinic.medication</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="dci"/>
+                <field name="search_text"/>
+                <filter name="group_class" string="Classe" context="{'group_by': 'drug_class'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_clinic_medication" model="ir.actions.act_window">
+        <field name="name">Médicaments</field>
+        <field name="res_model">clinic.medication</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_group_class': 1}</field>
+    </record>
+
+    <record id="view_clinic_prescription_list" model="ir.ui.view">
+        <field name="name">clinic.prescription.list</field>
+        <field name="model">clinic.prescription</field>
+        <field name="arch" type="xml">
+            <list string="Ordonnances">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="patient_id"/>
+                <field name="doctor_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_clinic_prescription_form" model="ir.ui.view">
+        <field name="name">clinic.prescription.form</field>
+        <field name="model">clinic.prescription</field>
+        <field name="arch" type="xml">
+            <form string="Ordonnance">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="patient_id"/>
+                            <field name="doctor_id"/>
+                        </group>
+                        <group>
+                            <field name="date"/>
+                            <field name="appointment_id"/>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="sequence" column_invisible="1"/>
+                            <field name="medication_id"/>
+                            <field name="dosage"/>
+                            <field name="duration"/>
+                            <field name="quantity"/>
+                            <field name="instructions"/>
+                        </list>
+                    </field>
+                    <group string="Conseils">
+                        <field name="notes" nolabel="1" placeholder="Conseils au patient..."/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_clinic_prescription" model="ir.actions.act_window">
+        <field name="name">Ordonnances</field>
+        <field name="res_model">clinic.prescription</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

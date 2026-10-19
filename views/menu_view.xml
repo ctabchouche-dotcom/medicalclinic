@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menu Racine -->
+    <menuitem id="menu_clinic_root" name="Clinique Médicale" sequence="10"
+              groups="medicalclinic.group_clinic_principal,medicalclinic.group_clinic_manager"/>
+
+    <!-- Menu Patients -->
+    <menuitem id="menu_clinic_patient"
+          name="Patients"
+          parent="menu_clinic_root"
+          action="action_clinic_patient"
+          groups="medicalclinic.group_clinic_principal,medicalclinic.group_clinic_manager"
+          sequence="10"/>
+
+    <!-- Menu Rendez-vous -->
+    <menuitem id="menu_clinic_appointment"
+          name="Rendez-vous"
+          parent="menu_clinic_root"
+          action="action_clinic_appointment"
+          groups="medicalclinic.group_clinic_principal,medicalclinic.group_clinic_manager"
+          sequence="15"/>
+
+    <menuitem id="menu_clinic_slot"
+          name="Créneaux"
+          parent="menu_clinic_root"
+          action="action_clinic_slot_grid"
+          groups="medicalclinic.group_clinic_principal,medicalclinic.group_clinic_manager"
+          sequence="16"/>
+
+    <!-- Section Médecin / Consultations -->
+    <menuitem id="menu_clinic_doctor_root" name="Médecine" parent="menu_clinic_root" sequence="20"
+              groups="medicalclinic.group_clinic_principal,medicalclinic.group_clinic_manager"/>
+
+    <menuitem id="menu_clinic_lab_prescription" name="Demander une Analyse" parent="menu_clinic_doctor_root"
+              action="action_clinic_lab_request_doctor" sequence="10"/>
+
+    <menuitem id="menu_clinic_radiology" name="Radios" parent="menu_clinic_doctor_root"
+              action="action_clinic_radiology" sequence="15"/>
+
+    <menuitem id="menu_clinic_prescription" name="Ordonnances" parent="menu_clinic_doctor_root"
+              action="action_clinic_prescription" sequence="20"/>
+
+    <!-- Section Laboratoire -->
+    <menuitem id="menu_clinic_lab_root" name="Laboratoire" parent="menu_clinic_root" sequence="30"
+              groups="medicalclinic.group_clinic_principal,medicalclinic.group_clinic_manager"/>
+
+    <menuitem id="menu_clinic_lab_processing" name="Saisir les Résultats" parent="menu_clinic_lab_root"
+              action="action_clinic_lab_request_lab" sequence="10"/>
+
+    <!-- Configuration : fiches médecins -->
+    <menuitem id="menu_clinic_config_root" name="Configuration" parent="menu_clinic_root" sequence="40"
+              groups="medicalclinic.group_clinic_manager"/>
+
+    <menuitem id="menu_clinic_doctor"
+          name="Médecins"
+          parent="menu_clinic_config_root"
+          action="action_clinic_doctor"
+          groups="medicalclinic.group_clinic_manager"
+          sequence="10"/>
+
+    <menuitem id="menu_clinic_medication"
+          name="Médicaments"
+          parent="menu_clinic_config_root"
+          action="action_clinic_medication"
+          groups="medicalclinic.group_clinic_manager"
+          sequence="20"/>
+</odoo>

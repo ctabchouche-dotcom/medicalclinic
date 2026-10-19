@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vue Liste / Tree -->
+    <record id="view_clinic_appointment_tree" model="ir.ui.view">
+        <field name="name">clinic.appointment.tree</field>
+        <field name="model">clinic.appointment</field>
+        <field name="arch" type="xml">
+            <list string="Rendez-vous" decoration-info="state == 'draft'" decoration-success="state == 'done'" decoration-danger="state == 'cancel'">
+                <field name="name"/>
+                <field name="patient_id"/>
+                <field name="doctor_id"/>
+                <field name="appointment_date"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vue Formulaire -->
+    <record id="view_clinic_appointment_form" model="ir.ui.view">
+        <field name="name">clinic.appointment.form</field>
+        <field name="model">clinic.appointment</field>
+        <field name="arch" type="xml">
+            <form string="Rendez-vous">
+                <header>
+                    <button name="action_confirm" string="Confirmer" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_done" string="Marquer comme Terminé" type="object" class="oe_highlight" invisible="state != 'confirmed'"/>
+                    <button name="action_cancel" string="Annuler" type="object" invisible="state in ('done', 'cancel')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="patient_id"/>
+                            <field name="doctor_id"/>
+                        </group>
+                        <group>
+                            <field name="appointment_date"/>
+                            <field name="booked_online"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Motif / Notes" name="notes">
+                            <field name="notes" placeholder="Raison de la consultation..."/>
+                        </page>
+                        <page string="Compte rendu" name="consultation_notes">
+                            <field name="consultation_notes" placeholder="Observations du médecin après la consultation..."/>
+                        </page>
+                        <page string="Radios" name="radiology">
+                            <field name="radiology_ids" context="{'default_patient_id': patient_id, 'default_doctor_id': doctor_id, 'default_appointment_id': id}">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="region"/>
+                                    <field name="side"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Ordonnances" name="prescriptions">
+                            <field name="prescription_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="doctor_id"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue Calendrier -->
+    <record id="view_clinic_appointment_calendar" model="ir.ui.view">
+        <field name="name">clinic.appointment.calendar</field>
+        <field name="model">clinic.appointment</field>
+        <field name="arch" type="xml">
+            <calendar string="Rendez-vous" date_start="appointment_date" color="doctor_id" event_limit="5">
+                <field name="patient_id"/>
+                <field name="doctor_id"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="view_clinic_appointment_kanban" model="ir.ui.view">
+        <field name="name">clinic.appointment.kanban</field>
+        <field name="model">clinic.appointment</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <field name="name" class="fw-bold"/>
+                        <field name="patient_id"/>
+                        <field name="doctor_id"/>
+                        <field name="appointment_date"/>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_clinic_appointment" model="ir.actions.act_window">
+        <field name="name">Rendez-vous</field>
+        <field name="res_model">clinic.appointment</field>
+        <field name="view_mode">kanban,list,form,calendar</field>
+    </record>
+</odoo>

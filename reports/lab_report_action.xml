@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Déclaration de l'action pour ajouter le bouton Imprimer -->
+    <record id="action_report_clinic_lab_request" model="ir.actions.report">
+        <field name="name">Bulletin d'Analyses Médicales</field>
+        <field name="model">clinic.lab.request</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">medicalclinic.report_lab_request</field>
+        <field name="report_file">medicalclinic.report_lab_request</field>
+        <field name="print_report_name">'Analyse_%s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_clinic_lab_request"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Le modèle d'e-mail est en noupdate : on rattache le PDF à chaque mise à jour. -->
+    <function model="clinic.lab.request" name="_configure_results_mail_template"/>
+
+</odoo>

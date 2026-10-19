@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_appointment_doctor_own" model="ir.rule">
+        <field name="name">Rendez-vous : le médecin ne voit que les siens</field>
+        <field name="model_id" ref="model_clinic_appointment"/>
+        <field name="domain_force">[('doctor_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_clinic_doctor'))]"/>
+    </record>
+
+    <record id="rule_lab_doctor_own" model="ir.rule">
+        <field name="name">Analyses : le médecin ne voit que ses prescriptions</field>
+        <field name="model_id" ref="model_clinic_lab_request"/>
+        <field name="domain_force">[('doctor_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_clinic_doctor'))]"/>
+    </record>
+
+    <record id="rule_lab_line_doctor_own" model="ir.rule">
+        <field name="name">Paramètres : le médecin ne voit que ses prescriptions</field>
+        <field name="model_id" ref="model_clinic_lab_result_line"/>
+        <field name="domain_force">[('request_id.doctor_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_clinic_doctor'))]"/>
+    </record>
+
+    <record id="rule_lab_line_technician_queue" model="ir.rule">
+        <field name="name">Paramètres : le laboratoire ne voit que les demandes envoyées</field>
+        <field name="model_id" ref="model_clinic_lab_result_line"/>
+        <field name="domain_force">[('request_id.state', 'in', ('in_progress', 'done'))]</field>
+        <field name="groups" eval="[(4, ref('group_clinic_lab'))]"/>
+    </record>
+
+    <record id="rule_lab_technician_queue" model="ir.rule">
+        <field name="name">Analyses : le laboratoire ne voit que les demandes envoyées</field>
+        <field name="model_id" ref="model_clinic_lab_request"/>
+        <field name="domain_force">[('state', 'in', ('in_progress', 'done'))]</field>
+        <field name="groups" eval="[(4, ref('group_clinic_lab'))]"/>
+    </record>
+
+    <record id="rule_radiology_doctor_own" model="ir.rule">
+        <field name="name">Radios : le médecin ne voit que les siennes</field>
+        <field name="model_id" ref="model_clinic_radiology_request"/>
+        <field name="domain_force">[('doctor_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_clinic_doctor'))]"/>
+    </record>
+
+    <record id="rule_slot_doctor_own" model="ir.rule">
+        <field name="name">Créneaux : le médecin ne voit que les siens</field>
+        <field name="model_id" ref="model_clinic_slot"/>
+        <field name="domain_force">[('doctor_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_clinic_doctor'))]"/>
+    </record>
+
+    <record id="rule_prescription_doctor_own" model="ir.rule">
+        <field name="name">Ordonnances : le médecin ne voit que les siennes</field>
+        <field name="model_id" ref="model_clinic_prescription"/>
+        <field name="domain_force">[('doctor_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_clinic_doctor'))]"/>
+    </record>
+
+    <record id="rule_prescription_line_doctor_own" model="ir.rule">
+        <field name="name">Lignes d'ordonnance : le médecin ne voit que les siennes</field>
+        <field name="model_id" ref="model_clinic_prescription_line"/>
+        <field name="domain_force">[('prescription_id.doctor_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_clinic_doctor'))]"/>
+    </record>
+</odoo>

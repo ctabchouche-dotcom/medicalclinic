@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Sous-template du document -->
+    <template id="report_lab_request_document">
+        <t t-call="web.external_layout">
+            <div class="page">
+                <div class="row mb-4">
+                    <div class="col-8">
+                        <h2>Bulletin d'analyses : <span t-field="doc.name"/></h2>
+                        <p>
+                            <strong>Patient :</strong> <span t-field="doc.patient_id.name"/><br/>
+                            <strong>Sexe :</strong> <span t-field="doc.patient_id.gender"/>
+                            — <strong>Âge :</strong> <span t-field="doc.patient_id.age"/> ans<br/>
+                            <strong>Médecin prescripteur :</strong> <span t-field="doc.doctor_id.name"/><br/>
+                            <strong>Date :</strong> <span t-field="doc.date"/><br/>
+                            <strong>Examens :</strong> <span t-out="doc.exam_summary()"/>
+                        </p>
+                    </div>
+                    <div class="col-4 text-end">
+                        <t t-if="doc.qr_code">
+                            <img t-att-src="'data:image/png;base64,%s' % doc.qr_code.decode('utf-8')" style="max-height: 120px;"/>
+                        </t>
+                    </div>
+                </div>
+
+                <h3>Résultats des examens</h3>
+                <table class="table table-sm table-bordered mt-3" style="font-size: 12px;">
+                    <thead>
+                        <tr>
+                            <th>Bilan</th>
+                            <th>Paramètre</th>
+                            <th>Résultat</th>
+                            <th>Unité</th>
+                            <th>Valeurs de référence</th>
+                            <th>Interprétation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="doc.exam_lines()" t-as="line">
+                            <td t-out="line['exam']"/>
+                            <td t-out="line['label']"/>
+                            <td t-att-style="line['flag'] == 'high' and 'color:#b42318;font-weight:bold;' or line['flag'] == 'low' and 'color:#b54708;font-weight:bold;' or ''" t-out="line['value']"/>
+                            <td t-out="line['unit']"/>
+                            <td>
+                                <span t-out="line['reference']"/>
+                                <div t-if="line['note']" style="font-size: 10px; color: #555;" t-out="line['note']"/>
+                            </td>
+                            <td t-att-style="line['flag'] == 'high' and 'color:#b42318;font-weight:bold;' or line['flag'] == 'low' and 'color:#b54708;font-weight:bold;' or (line['flag'] == 'normal' and 'color:#067647;' or '')" t-out="line['flag_label']"/>
+                        </tr>
+                    </tbody>
+                </table>
+                <p style="font-size: 11px; color: #555;">
+                    Intervalles de référence adulte, indicatifs. Ils dépendent de la technique, du sexe et, pour l'AMH, de l'âge.
+                    FSH, LH et œstradiol se lisent selon la phase du cycle.
+                </p>
+
+                <div t-if="doc.notes" class="mt-4">
+                    <strong>Remarques du laboratoire :</strong>
+                    <p t-field="doc.notes"/>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Template Racine -->
+    <template id="report_lab_request">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="medicalclinic.report_lab_request_document"/>
+            </t>
+        </t>
+    </template>
+
+</odoo>

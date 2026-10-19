@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- 1. VUE FORMULAIRE : MÉDECIN (Prescription des Analyses) -->
+    <record id="view_clinic_lab_request_doctor_form" model="ir.ui.view">
+        <field name="name">clinic.lab.request.doctor.form</field>
+        <field name="model">clinic.lab.request</field>
+        <field name="arch" type="xml">
+            <form string="Demande d'Analyse Médicale">
+                <header>
+                    <button name="action_start" string="Envoyer au Laboratoire" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <field name="qr_code" widget="image" class="oe_avatar" options="{'size': [90, 90]}"/>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="patient_id"/>
+                            <field name="doctor_id"/>
+                        </group>
+                        <group>
+                            <field name="date"/>
+                            <field name="appointment_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Cocher les Examens Requis">
+                            <group>
+                                <group string="Analyses de Sang &amp; Biochimie">
+                                    <field name="check_nfs"/>
+                                    <field name="check_glycemie"/>
+                                    <field name="check_cholesterol"/>
+                                    <field name="check_renal"/>
+                                </group>
+                                <group string="Bilans Spécialisés">
+                                    <field name="check_bilan_hepatique"/>
+                                    <field name="check_bilan_hormonal"/>
+                                    <field name="check_bilan_ionique"/>
+                                </group>
+                            </group>
+                            <field name="line_ids" readonly="1" invisible="not line_ids">
+                                <list create="0" delete="0">
+                                    <field name="exam_name"/>
+                                    <field name="name"/>
+                                    <field name="unit"/>
+                                    <field name="reference"/>
+                                    <field name="ref_note" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- 2. VUE FORMULAIRE : LABORATOIRE (Saisie des Résultats) -->
+    <record id="view_clinic_lab_request_lab_form" model="ir.ui.view">
+        <field name="name">clinic.lab.request.lab.form</field>
+        <field name="model">clinic.lab.request</field>
+        <field name="arch" type="xml">
+            <form string="Saisie des Résultats d'Analyses">
+                <header>
+                    <button name="action_done_and_notify" string="Valider &amp; Envoyer les Résultats" type="object" class="oe_highlight" invisible="state != 'in_progress'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <field name="qr_code" widget="image" class="oe_avatar" options="{'size': [90, 90]}"/>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="patient_id" readonly="1"/>
+                            <field name="doctor_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="date" readonly="1"/>
+                            <field name="result_url" widget="url" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Saisie des Résultats">
+                            <field name="line_ids" readonly="state != 'in_progress'">
+                                <list editable="bottom" create="0" delete="0">
+                                    <field name="sequence" column_invisible="1"/>
+                                    <field name="exam_name" readonly="1"/>
+                                    <field name="name" readonly="1"/>
+                                    <field name="result" readonly="parent.state != 'in_progress'"/>
+                                    <field name="unit" readonly="1"/>
+                                    <field name="reference" readonly="1"/>
+                                    <field name="ref_note" readonly="1" optional="show"/>
+                                    <field name="flag" widget="badge" readonly="1"
+                                           decoration-success="flag == 'normal'"
+                                           decoration-danger="flag == 'high'"
+                                           decoration-warning="flag == 'low'"/>
+                                </list>
+                            </field>
+                            <group string="Remarques du Laboratoire">
+                                <field name="notes" placeholder="Notes ou observations..."/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- VUE LISTE COMMUNE -->
+    <record id="view_clinic_lab_request_tree" model="ir.ui.view">
+        <field name="name">clinic.lab.request.list</field>
+        <field name="model">clinic.lab.request</field>
+        <field name="arch" type="xml">
+            <list string="Demandes d'Analyses">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="patient_id"/>
+                <field name="doctor_id"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_clinic_lab_request_kanban" model="ir.ui.view">
+        <field name="name">clinic.lab.request.kanban</field>
+        <field name="model">clinic.lab.request</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <field name="name" class="fw-bold"/>
+                        <field name="patient_id"/>
+                        <field name="doctor_id"/>
+                        <field name="date"/>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ACTION 1 : MÉDECIN (Associer à la vue Médecin) -->
+    <record id="action_clinic_lab_request_doctor" model="ir.actions.act_window">
+        <field name="name">Prescriptions d'Analyses</field>
+        <field name="res_model">clinic.lab.request</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('view_clinic_lab_request_kanban')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_clinic_lab_request_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_clinic_lab_request_doctor_form')})]"/>
+    </record>
+
+    <!-- ACTION 2 : LABORATOIRE (Associer à la vue Laboratoire) -->
+    <record id="action_clinic_lab_request_lab" model="ir.actions.act_window">
+        <field name="name">Traitement &amp; Saisie Laboratoire</field>
+        <field name="res_model">clinic.lab.request</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('state', 'in', ['in_progress', 'done'])]</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('view_clinic_lab_request_kanban')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_clinic_lab_request_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_clinic_lab_request_lab_form')})]"/>
+    </record>
+
+</odoo>

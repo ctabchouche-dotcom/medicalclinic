@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="clinic_booking_page" name="Prise de rendez-vous">
+        <t t-call="web.layout">
+            <t t-set="title">Prendre rendez-vous</t>
+            <t t-set="head">
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <link rel="stylesheet" href="/medicalclinic/static/src/css/clinic_web.css"/>
+                <t t-call-assets="web.assets_frontend" t-js="false"/>
+            </t>
+            <div class="book-body">
+                <main class="book-wrap">
+                    <header class="book-hero">
+                        <p class="book-kicker" t-out="company"/>
+                        <h1>Prendre rendez-vous</h1>
+                        <p>Choisissez un médecin, puis un jour, puis une heure déjà confirmée.</p>
+                    </header>
+
+                    <section class="book-card" t-if="not doctors">
+                        <p>Aucun créneau n'est ouvert pour le moment.</p>
+                    </section>
+
+                    <t t-else="">
+                        <section class="book-card">
+                            <h2>Médecin</h2>
+                            <div class="book-choices">
+                                <a t-foreach="doctors" t-as="item"
+                                   t-att-href="'/prendre-rendez-vous?doctor_id=%s' % item.id"
+                                   t-att-class="'book-choice is-active' if doctor and item.id == doctor.id else 'book-choice'">
+                                    <strong t-out="item.name"/>
+                                    <span t-out="item.specialty"/>
+                                </a>
+                            </div>
+                        </section>
+
+                        <section class="book-card" t-if="doctor">
+                            <h2>Jour</h2>
+                            <p class="book-empty" t-if="not days">Ce médecin n'a pas de jour ouvert.</p>
+                            <div class="book-choices" t-else="">
+                                <a t-foreach="days" t-as="item"
+                                   t-att-href="'/prendre-rendez-vous?doctor_id=%s&amp;day=%s' % (doctor.id, item['key'])"
+                                   t-att-class="'book-choice is-active' if day and item['key'] == day['key'] else 'book-choice'">
+                                    <strong t-out="item['label']"/>
+                                </a>
+                            </div>
+                        </section>
+
+                        <form t-if="day" class="book-card" action="/prendre-rendez-vous/envoyer" method="post">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <h2>Heure</h2>
+                            <p class="book-error" t-if="error" t-out="error"/>
+                            <div class="book-choices">
+                                <label t-foreach="day['hours']" t-as="hour" class="book-choice">
+                                    <input type="radio" name="slot_id" required="required" t-att-value="hour['id']"
+                                           t-att-checked="str(hour['id']) == str(form.get('slot_id') or '') or None"/>
+                                    <strong t-out="hour['label']"/>
+                                </label>
+                            </div>
+                            <label>
+                                Nom du patient
+                                <input type="text" name="patient_name" required="required" maxlength="128"
+                                       t-att-value="form.get('patient_name')"/>
+                            </label>
+                            <div class="book-row">
+                                <label>
+                                    Téléphone
+                                    <input type="tel" name="phone" required="required" maxlength="32"
+                                           t-att-value="form.get('phone')"/>
+                                </label>
+                                <label>
+                                    E-mail
+                                    <input type="email" name="email" maxlength="128"
+                                           t-att-value="form.get('email')"/>
+                                </label>
+                            </div>
+                            <label>
+                                Sexe
+                                <select name="gender" required="required">
+                                    <option value="">Choisir…</option>
+                                    <option value="female" t-att-selected="'female' == form.get('gender') or None">Féminin</option>
+                                    <option value="male" t-att-selected="'male' == form.get('gender') or None">Masculin</option>
+                                </select>
+                            </label>
+                            <label>
+                                Motif
+                                <textarea name="notes" rows="3" maxlength="4000" t-out="form.get('notes')"/>
+                            </label>
+                            <button type="submit" class="book-submit">Envoyer la demande</button>
+                        </form>
+                    </t>
+                </main>
+            </div>
+        </t>
+    </template>
+
+    <template id="clinic_booking_done" name="Rendez-vous envoyé">
+        <t t-call="web.layout">
+            <t t-set="title">Demande envoyée</t>
+            <t t-set="head">
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <link rel="stylesheet" href="/medicalclinic/static/src/css/clinic_web.css"/>
+            </t>
+            <div class="book-body">
+                <main class="book-wrap">
+                    <section class="book-card book-done">
+                        <p class="book-kicker" t-out="company"/>
+                        <h1>Demande envoyée</h1>
+                        <p>La réception a reçu votre demande <strong t-out="appointment.name"/>. Elle confirmera le créneau du <strong t-out="when"/> avec <strong t-out="appointment.doctor_id.name"/>.</p>
+                        <a class="book-submit book-link" href="/prendre-rendez-vous">Nouvelle demande</a>
+                    </section>
+                </main>
+            </div>
+        </t>
+    </template>
+
+    <template id="clinic_slots_page" name="Créneaux de la semaine">
+        <t t-call="medicalclinic.clinic_page">
+            <main class="clinic-main">
+                <div class="clinic-toolbar">
+                    <div>
+                        <h1>Créneaux</h1>
+                        <p class="clinic-muted">
+                            La réception prépare la semaine, le médecin confirme ou modifie, puis les heures apparaissent sur le site.
+                        </p>
+                    </div>
+                    <div class="clinic-toolbar-actions">
+                        <a class="btn ghost" t-att-href="prev_url">Semaine précédente</a>
+                        <a class="btn ghost" t-att-href="next_url">Semaine suivante</a>
+                        <a class="btn ghost" t-att-href="board_url">Retour</a>
+                    </div>
+                </div>
+                <p class="clinic-alert" t-if="error" role="alert" t-out="error"/>
+                <p class="clinic-ok" t-if="message" role="status" t-out="message"/>
+                <p class="book-kicker" t-out="week_label"/>
+                <form t-if="role == 'receptionist'" class="clinic-search" action="/clinic/creneaux" method="get">
+                    <input type="hidden" name="as" t-att-value="role"/>
+                    <input type="hidden" name="week" t-att-value="week"/>
+                    <select name="doctor_id">
+                        <option t-foreach="doctors" t-as="doctor" t-att-value="doctor.id"
+                                t-att-selected="selected_doctor and doctor.id == selected_doctor.id or None"
+                                t-out="'%s — %s' % (doctor.name, doctor.specialty)"/>
+                    </select>
+                    <button type="submit" class="btn ghost">Afficher</button>
+                </form>
+
+                <form t-if="role == 'receptionist' and selected_doctor" class="clinic-grid-form" action="/clinic/creneaux/grille" method="post">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="as" t-att-value="role"/>
+                    <input type="hidden" name="week" t-att-value="week"/>
+                    <input type="hidden" name="doctor_id" t-att-value="selected_doctor.id"/>
+                    <p class="clinic-muted">
+                        Cochez les cases pour <strong t-out="selected_doctor.name"/>. Chaque case dure 30 minutes.
+                        La case du jour coche toute la journée. Une case grisée est déjà envoyée, confirmée ou réservée.
+                    </p>
+                    <div class="clinic-grid-wrap">
+                        <table class="clinic-grid">
+                            <thead>
+                                <tr>
+                                    <th>Heure</th>
+                                    <th t-foreach="grid_days" t-as="day">
+                                        <span t-out="day['label']"/>
+                                        <input type="checkbox" class="clinic-grid-day" t-att-data-day="day['key']" title="Toute la journée"/>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="grid_rows" t-as="row">
+                                    <th t-out="row['hour']"/>
+                                    <td t-foreach="row['cells']" t-as="cell" t-att-class="cell['kind'] and ('is-' + cell['kind']) or None">
+                                        <input type="checkbox" name="cells" t-att-value="cell['value']"
+                                               t-att-data-day="cell['day']"
+                                               t-att-checked="cell['checked'] and 'checked' or None"
+                                               t-att-disabled="cell['locked'] and 'disabled' or None"
+                                               t-att-title="cell['title'] or None"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button type="submit" class="btn primary">Enregistrer le tableau</button>
+                </form>
+
+                <t t-if="role == 'doctor' and not selected_doctor">
+                    <p class="clinic-alert">Votre compte n'est pas relié à une fiche médecin.</p>
+                </t>
+
+                <p class="clinic-muted" t-if="role == 'receptionist' and slots">Ces créneaux ont été déplacés par le médecin et ne sont plus sur une case de 30 minutes.</p>
+                <section class="clinic-board" t-if="role == 'doctor' or slots">
+                    <article t-foreach="slots" t-as="slot" class="clinic-card clinic-slot-card">
+                        <span class="clinic-ref" t-out="slot['state_label']"/>
+                        <strong t-out="slot['when']"/>
+                        <span t-out="slot['doctor']"/>
+                        <span t-if="slot['patient']" class="clinic-meta" t-out="slot['patient']"/>
+                        <form t-if="slot['can_edit']" action="/clinic/creneaux/modifier" method="post" class="clinic-slot-edit">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="as" t-att-value="role"/>
+                            <input type="hidden" name="week" t-att-value="week"/>
+                            <input type="hidden" name="slot_id" t-att-value="slot['id']"/>
+                            <input type="date" name="day" required="required" t-att-value="slot['day']"/>
+                            <input type="time" name="start_hour" required="required" t-att-value="slot['start_hour']"/>
+                            <input type="time" name="stop_hour" required="required" t-att-value="slot['stop_hour']"/>
+                            <button type="submit" class="btn ghost">Modifier</button>
+                        </form>
+                        <form t-if="slot['can_confirm']" action="/clinic/creneaux/confirmer" method="post">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="as" t-att-value="role"/>
+                            <input type="hidden" name="week" t-att-value="week"/>
+                            <input type="hidden" name="slot_id" t-att-value="slot['id']"/>
+                            <button type="submit" class="btn primary">Confirmer</button>
+                        </form>
+                    </article>
+                    <p class="clinic-empty" t-if="not slots">Aucun créneau cette semaine.</p>
+                </section>
+
+                <form t-if="role == 'receptionist' and selected_doctor and draft_count" action="/clinic/creneaux/envoyer" method="post">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="as" t-att-value="role"/>
+                    <input type="hidden" name="week" t-att-value="week"/>
+                    <input type="hidden" name="doctor_id" t-att-value="selected_doctor.id"/>
+                    <button type="submit" class="btn primary">Envoyer <t t-out="draft_count"/> créneau(x) au médecin</button>
+                </form>
+                <script>
+                    document.querySelectorAll('.clinic-grid-day').forEach(function (dayBox) {
+                        dayBox.addEventListener('change', function () {
+                            var day = dayBox.getAttribute('data-day');
+                            document.querySelectorAll('.clinic-grid input[name="cells"][data-day="' + day + '"]:not(:disabled)').forEach(function (input) {
+                                input.checked = dayBox.checked;
+                            });
+                        });
+                    });
+                </script>
+            </main>
+        </t>
+    </template>
+</odoo>
