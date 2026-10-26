@@ -123,6 +123,28 @@
                 </p>
                 <p class="clinic-muted" t-if="truncated">Seuls les 200 premiers dossiers sont affichés. Affinez la recherche.</p>
 
+                <section class="clinic-board" t-if="pending_slots" aria-label="Créneaux à confirmer">
+                    <div class="clinic-column">
+                        <header>
+                            <h2>Créneaux à confirmer</h2>
+                            <span t-out="len(pending_slots)"/>
+                        </header>
+                        <div class="clinic-column-body">
+                            <article t-foreach="pending_slots" t-as="slot" class="clinic-card">
+                                <span class="clinic-ref">Reçu de la réception</span>
+                                <strong t-out="slot['when']"/>
+                                <form action="/clinic/creneaux/confirmer" method="post">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <input type="hidden" name="as" t-att-value="role"/>
+                                    <input type="hidden" name="slot_id" t-att-value="slot['id']"/>
+                                    <input type="hidden" name="next" value="/clinic"/>
+                                    <button type="submit" class="btn primary">Confirmer</button>
+                                </form>
+                            </article>
+                        </div>
+                    </div>
+                </section>
+
                 <section class="clinic-board" aria-label="Tableau kanban">
                     <div t-foreach="columns" t-as="column" class="clinic-column" t-att-data-state="column['key']">
                         <header>
@@ -141,7 +163,8 @@
                                     <time t-out="card['when']"/>
                                     <span t-if="card['note']" class="clinic-note" t-out="card['note']"/>
                                 </a>
-                                <div class="clinic-card-actions" t-if="card['actions']">
+                                <div class="clinic-card-actions" t-if="card['actions'] or card.get('voucher_url')">
+                                    <a t-if="card.get('voucher_url')" class="btn primary" t-att-href="card['voucher_url']" target="_blank">Imprimer le bon</a>
                                     <t t-foreach="card['actions']" t-as="action">
                                         <form action="/clinic/move" method="post">
                                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
@@ -525,9 +548,10 @@
                     </div>
                     <span t-att-class="'clinic-state state-' + lab.state" t-out="state_label"/>
                 </header>
-                <div class="clinic-card-actions" t-if="role == 'lab'">
-                    <a class="btn ghost" t-att-href="pdf_url">Télécharger le PDF</a>
-                    <form t-att-action="'/clinic/lab/%s/email' % lab.id" method="post">
+                <div class="clinic-card-actions" t-if="voucher_url or role == 'lab'">
+                    <a t-if="voucher_url" t-att-class="'btn primary' if role == 'lab' else 'btn ghost'" t-att-href="voucher_url" target="_blank">Imprimer le bon</a>
+                    <a t-if="role == 'lab'" class="btn ghost" t-att-href="pdf_url">Télécharger le PDF</a>
+                    <form t-if="role == 'lab'" t-att-action="'/clinic/lab/%s/email' % lab.id" method="post">
                         <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                         <input type="hidden" name="as" t-att-value="role"/>
                         <button type="submit" class="btn primary">Envoyer l'e-mail au patient</button>

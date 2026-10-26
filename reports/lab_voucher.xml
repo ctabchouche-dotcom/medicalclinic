@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_lab_voucher_document">
+        <div class="page" style="font-family: Arial, sans-serif; color: #16332f;">
+            <p style="margin: 0; letter-spacing: 0.08em; text-transform: uppercase; color: #0c6e68; font-size: 12px;">
+                <span t-out="doc.env.company.name"/>
+            </p>
+            <h2 style="margin: 6px 0 14px;">Bon de laboratoire</h2>
+            <p style="font-size: 18px; margin: 0 0 8px;">
+                <strong t-field="doc.patient_id.name"/>
+            </p>
+            <p style="margin: 0 0 12px;">
+                Numéro patient : <strong t-field="doc.patient_id.code"/><br/>
+                Demande : <strong t-field="doc.name"/><br/>
+                Médecin : <span t-field="doc.doctor_id.name"/><br/>
+                Examens : <span t-out="doc.exam_summary()"/>
+            </p>
+            <div t-if="doc.qr_code" style="margin: 12px 0;">
+                <img t-att-src="'data:image/png;base64,%s' % doc.qr_code.decode('utf-8')" style="width: 180px; height: 180px;"/>
+            </div>
+            <p style="font-size: 13px;">
+                Conservez ce bon. Quand les analyses seront prêtes, scannez le QR code pour les afficher.
+            </p>
+        </div>
+    </template>
+
+    <template id="report_lab_voucher">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="medicalclinic.report_lab_voucher_document"/>
+            </t>
+        </t>
+    </template>
+</odoo>

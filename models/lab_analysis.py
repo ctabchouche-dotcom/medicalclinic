@@ -178,6 +178,12 @@ class ClinicLabRequest(models.Model):
         labels = [label for check, _code, label, _detail in self.EXAM_SPECS if self[check]]
         return ', '.join(labels) or _("Aucun examen")
 
+    def action_print_voucher(self):
+        self.ensure_one()
+        if self.state == 'draft':
+            raise UserError(_("Le bon s'imprime une fois la demande envoyée au laboratoire."))
+        return self.env.ref('medicalclinic.action_report_clinic_lab_voucher').report_action(self)
+
     def _merged_flag(self, vals, field_name):
         if field_name in vals:
             return bool(vals[field_name])

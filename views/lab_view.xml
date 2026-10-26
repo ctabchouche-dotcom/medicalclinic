@@ -9,6 +9,7 @@
             <form string="Demande d'Analyse Médicale">
                 <header>
                     <button name="action_start" string="Envoyer au Laboratoire" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_print_voucher" string="Imprimer le bon" type="object" invisible="state == 'draft'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
                 </header>
                 <sheet>
@@ -68,6 +69,7 @@
             <form string="Saisie des Résultats d'Analyses">
                 <header>
                     <button name="action_done_and_notify" string="Valider &amp; Envoyer les Résultats" type="object" class="oe_highlight" invisible="state != 'in_progress'"/>
+                    <button name="action_print_voucher" string="Imprimer le bon" type="object" invisible="state == 'draft'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
                 </header>
                 <sheet>

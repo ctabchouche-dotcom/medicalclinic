@@ -12,7 +12,8 @@ WEEKDAYS = ('lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanc
 
 def clinic_tz_name():
     user = request.env.user
-    return user.tz or request.env.company.partner_id.tz or 'Africa/Algiers'
+    company_tz = request.env.company.sudo().partner_id.tz
+    return user.tz or company_tz or 'Africa/Algiers'
 
 
 def clinic_tz():

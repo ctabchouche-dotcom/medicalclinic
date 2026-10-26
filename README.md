@@ -55,7 +55,7 @@ Le médecin coche un ou plusieurs bilans :
 
 La demande passe de brouillon à « en cours », puis à « résultats prêts ». Le laboratoire saisit chaque paramètre. La valeur est comparée à l'intervalle de référence, avec un drapeau normal, haut ou bas. Les normes qui dépendent du sexe ou de l'âge, comme l'AMH, sont prises sur la fiche patient.
 
-Un QR code et un jeton ouvrent la page publique des résultats, `/lab/results/<id>?access_token=...`. Sans le bon jeton, la page n'existe pas. Le médecin peut aussi produire le PDF et envoyer les résultats par e-mail.
+Un QR code et un jeton ouvrent la page publique des résultats, `/lab/results/<id>?access_token=...`. Sans le bon jeton, la page n'existe pas. Quand la demande part au laboratoire, on imprime un bon au nom du patient avec ce QR code. Le scan n'affiche les chiffres qu'une fois les résultats validés. Le médecin peut aussi produire le bulletin PDF et envoyer les résultats par e-mail.
 
 ### Radiographie
 
@@ -96,6 +96,35 @@ Un médecin ne voit que les dossiers dont la fiche médecin est liée à son com
 
 - Ordonnance
 - Compte-rendu de laboratoire
+- Bon de laboratoire
+
+## Captures
+
+![Fiche patient](screenshots/01-fiche-patient.png)
+
+![Rendez-vous confirmé](screenshots/02-rendez-vous.png)
+
+![Ordonnance](screenshots/03-ordonnance.png)
+
+![Bulletin d'analyses](screenshots/04-bulletin-analyses.png)
+
+![Créneaux de la semaine](screenshots/05-creneaux.png)
+
+![Prise de rendez-vous](screenshots/06-prise-rendez-vous.png)
+
+![Consultations du médecin](screenshots/07-consultations.png)
+
+![Bon de laboratoire](screenshots/08-bon-laboratoire.png)
+
+![Ordonnance PDF](screenshots/09-ordonnance-pdf.png)
+
+![Prescription d'analyses](screenshots/10-prescription-analyses.png)
+
+![Formulaire de rendez-vous](screenshots/11-formulaire-rdv.png)
+
+![Demande reçue du site](screenshots/12-demande-en-ligne.png)
+
+![Saisie des résultats](screenshots/13-saisie-resultats.png)
 
 ## Installation
 
@@ -118,7 +147,7 @@ odoo-bin -c odoo.conf -d NOM_BASE -u medicalclinic --stop-after-init
 
 ## Tests
 
-Les tests sont dans `tests/test_clinic.py`. Ils couvrent le passage des rendez-vous, le tableau de créneaux de la semaine, la confirmation du médecin, la réservation en ligne, l'ordonnance, le drapeau du laboratoire et le rattachement d'une radio.
+Les tests sont dans `tests/`. `test_clinic.py` couvre les rendez-vous, le tableau de créneaux, la confirmation du médecin, la réservation, l'ordonnance, le drapeau du laboratoire et la radio. `test_security.py` vérifie qu'un médecin ne voit que ses dossiers, que la réception voit tous les brouillons, et que le laboratoire ne modifie pas une ordonnance. `test_http.py` ouvre la page publique et refuse un résultat de laboratoire sans le bon jeton.
 
 ```bash
 odoo-bin -c odoo.conf -d NOM_BASE -u medicalclinic --test-enable --test-tags /medicalclinic --stop-after-init
@@ -126,7 +155,7 @@ odoo-bin -c odoo.conf -d NOM_BASE -u medicalclinic --test-enable --test-tags /me
 
 ## Technique
 
-- Version du module : `1.6.0`
+- Version du module : `1.7.0`
 - Licence : LGPL-3
 - Modèles : `clinic.patient`, `clinic.doctor`, `clinic.appointment`, `clinic.prescription`, `clinic.prescription.line`, `clinic.medication`, `clinic.lab.request`, `clinic.lab.result.line`, `clinic.radiology.request`
 
@@ -189,7 +218,7 @@ The doctor ticks one or more panels:
 
 The request moves from draft to in progress, then to results ready. The lab enters each analyte. The value is compared with the reference range and flagged normal, high, or low. Ranges that depend on sex or age, such as AMH, use the patient record.
 
-A QR code and a token open the public results page, `/lab/results/<id>?access_token=...`. The wrong token returns a not-found page. The doctor can also print the PDF and email the results.
+A QR code and a token open the public results page, `/lab/results/<id>?access_token=...`. The wrong token returns a not-found page. When the request is sent to the laboratory, a slip is printed in the patient's name with that QR code. Scanning it shows the figures only after the results are validated. The doctor can also print the bulletin PDF and email the results.
 
 #### X-ray
 
@@ -230,6 +259,35 @@ A doctor only sees files whose doctor record is linked to their user. The admini
 
 - Prescription
 - Laboratory report
+- Laboratory slip
+
+### Screenshots
+
+![Patient record](screenshots/01-fiche-patient.png)
+
+![Confirmed appointment](screenshots/02-rendez-vous.png)
+
+![Prescription](screenshots/03-ordonnance.png)
+
+![Laboratory report](screenshots/04-bulletin-analyses.png)
+
+![Weekly slots](screenshots/05-creneaux.png)
+
+![Online booking](screenshots/06-prise-rendez-vous.png)
+
+![Doctor consultations](screenshots/07-consultations.png)
+
+![Laboratory slip](screenshots/08-bon-laboratoire.png)
+
+![Prescription PDF](screenshots/09-ordonnance-pdf.png)
+
+![Lab request](screenshots/10-prescription-analyses.png)
+
+![Booking form](screenshots/11-formulaire-rdv.png)
+
+![Online request](screenshots/12-demande-en-ligne.png)
+
+![Result entry](screenshots/13-saisie-resultats.png)
 
 ### Installation
 
@@ -252,7 +310,7 @@ odoo-bin -c odoo.conf -d DATABASE -u medicalclinic --stop-after-init
 
 ### Tests
 
-`tests/test_clinic.py` covers appointment transitions, the weekly slot grid, doctor confirmation, online booking, prescriptions, the laboratory flag, and attaching an X-ray link.
+The tests live in `tests/`. `test_clinic.py` covers appointments, the weekly slot grid, doctor confirmation, booking, prescriptions, the laboratory flag, and X-rays. `test_security.py` checks that a doctor only sees their own records, that reception sees every draft, and that the laboratory cannot edit a prescription. `test_http.py` opens the public page and refuses a lab result without the right token.
 
 ```bash
 odoo-bin -c odoo.conf -d DATABASE -u medicalclinic --test-enable --test-tags /medicalclinic --stop-after-init
@@ -260,7 +318,7 @@ odoo-bin -c odoo.conf -d DATABASE -u medicalclinic --test-enable --test-tags /me
 
 ### Technical
 
-- Module version: `1.6.0`
+- Module version: `1.7.0`
 - License: LGPL-3
 - Models: `clinic.patient`, `clinic.doctor`, `clinic.appointment`, `clinic.prescription`, `clinic.prescription.line`, `clinic.medication`, `clinic.lab.request`, `clinic.lab.result.line`, `clinic.radiology.request`
 
@@ -323,7 +381,7 @@ Der Arzt kreuzt ein oder mehrere Profile an:
 
 Die Anforderung geht von Entwurf zu „in Arbeit“, dann zu „Ergebnisse fertig“. Das Labor erfasst jeden Parameter. Der Wert wird mit dem Referenzbereich verglichen und als normal, hoch oder niedrig markiert. Bereiche, die von Geschlecht oder Alter abhängen, etwa AMH, nutzen die Patientenkarte.
 
-Ein QR-Code und ein Token öffnen die öffentliche Ergebnisseite `/lab/results/<id>?access_token=...`. Ein falsches Token liefert eine Nicht-gefunden-Seite. Der Arzt kann auch das PDF drucken und die Ergebnisse per E-Mail senden.
+Ein QR-Code und ein Token öffnen die öffentliche Ergebnisseite `/lab/results/<id>?access_token=...`. Ein falsches Token liefert eine Nicht-gefunden-Seite. Geht der Auftrag ins Labor, wird ein Schein auf den Namen des Patienten mit diesem QR-Code gedruckt. Der Scan zeigt die Werte erst nach der Freigabe. Der Arzt kann auch das Bulletin als PDF drucken und die Ergebnisse per E-Mail senden.
 
 #### Röntgen
 
@@ -364,6 +422,35 @@ Ein Arzt sieht nur Akten, deren Arztkarte mit seinem Benutzer verknüpft ist. Ad
 
 - Rezept
 - Laborbericht
+- Laborschein
+
+### Aufnahmen
+
+![Patientenkarte](screenshots/01-fiche-patient.png)
+
+![Bestätigter Termin](screenshots/02-rendez-vous.png)
+
+![Rezept](screenshots/03-ordonnance.png)
+
+![Laborbericht](screenshots/04-bulletin-analyses.png)
+
+![Wochenslots](screenshots/05-creneaux.png)
+
+![Online-Buchung](screenshots/06-prise-rendez-vous.png)
+
+![Sprechstunde](screenshots/07-consultations.png)
+
+![Laborschein](screenshots/08-bon-laboratoire.png)
+
+![Rezept als PDF](screenshots/09-ordonnance-pdf.png)
+
+![Laborauftrag](screenshots/10-prescription-analyses.png)
+
+![Buchungsformular](screenshots/11-formulaire-rdv.png)
+
+![Online-Anfrage](screenshots/12-demande-en-ligne.png)
+
+![Ergebniseingabe](screenshots/13-saisie-resultats.png)
 
 ### Installation
 
@@ -386,7 +473,7 @@ odoo-bin -c odoo.conf -d DATENBANK -u medicalclinic --stop-after-init
 
 ### Tests
 
-`tests/test_clinic.py` prüft die Terminstatus, die Wochentabelle, die Bestätigung durch den Arzt, die Online-Buchung, das Rezept, die Labormarkierung und das Anhängen eines Röntgenlinks.
+Die Tests liegen in `tests/`. `test_clinic.py` prüft Termine, die Wochentabelle, die Bestätigung durch den Arzt, die Buchung, das Rezept, die Labormarkierung und das Röntgen. `test_security.py` prüft, dass ein Arzt nur eigene Akten sieht, dass der Empfang alle Entwürfe sieht und dass das Labor kein Rezept ändert. `test_http.py` öffnet die öffentliche Seite und lehnt ein Laborergebnis ohne das richtige Token ab.
 
 ```bash
 odoo-bin -c odoo.conf -d DATENBANK -u medicalclinic --test-enable --test-tags /medicalclinic --stop-after-init
@@ -394,7 +481,7 @@ odoo-bin -c odoo.conf -d DATENBANK -u medicalclinic --test-enable --test-tags /m
 
 ### Technik
 
-- Modulversion: `1.6.0`
+- Modulversion: `1.7.0`
 - Lizenz: LGPL-3
 - Modelle: `clinic.patient`, `clinic.doctor`, `clinic.appointment`, `clinic.prescription`, `clinic.prescription.line`, `clinic.medication`, `clinic.lab.request`, `clinic.lab.result.line`, `clinic.radiology.request`
 
@@ -459,7 +546,7 @@ odoo-bin -c odoo.conf -d DATENBANK -u medicalclinic --test-enable --test-tags /m
 
 ينتقل الطلب من مسودة إلى «قيد الإنجاز»، ثم إلى «النتائج جاهزة». المختبر يدخل كل مؤشر. تُقارن القيمة بالمجال المرجعي وتُعلَّم: طبيعي، أو مرتفع، أو منخفض. المجالات التي تعتمد على الجنس أو السن، مثل AMH، تُؤخذ من بطاقة المريض.
 
-رمز QR ورمز سرّي يفتحان صفحة النتائج العامة `/lab/results/<id>?access_token=...`. الرمز الخاطئ يعيد صفحة غير موجودة. يستطيع الطبيب أيضاً إصدار PDF وإرسال النتائج بالبريد.
+رمز QR ورمز سرّي يفتحان صفحة النتائج العامة `/lab/results/<id>?access_token=...`. الرمز الخاطئ يعيد صفحة غير موجودة. عند إرسال الطلب إلى المختبر تُطبع قسيمة باسم المريض تحمل رمز QR. المسح لا يعرض الأرقام إلا بعد اعتماد النتائج. يستطيع الطبيب أيضاً إصدار البيان PDF وإرسال النتائج بالبريد.
 
 #### الأشعة
 
@@ -500,6 +587,35 @@ odoo-bin -c odoo.conf -d DATENBANK -u medicalclinic --test-enable --test-tags /m
 
 - الوصفة
 - تقرير المختبر
+- قسيمة المختبر
+
+### لقطات
+
+![بطاقة المريض](screenshots/01-fiche-patient.png)
+
+![موعد مؤكد](screenshots/02-rendez-vous.png)
+
+![الوصفة](screenshots/03-ordonnance.png)
+
+![تقرير المختبر](screenshots/04-bulletin-analyses.png)
+
+![حصص الأسبوع](screenshots/05-creneaux.png)
+
+![الحجز عبر الموقع](screenshots/06-prise-rendez-vous.png)
+
+![استشارات الطبيب](screenshots/07-consultations.png)
+
+![قسيمة المختبر](screenshots/08-bon-laboratoire.png)
+
+![الوصفة PDF](screenshots/09-ordonnance-pdf.png)
+
+![طلب التحاليل](screenshots/10-prescription-analyses.png)
+
+![نموذج الحجز](screenshots/11-formulaire-rdv.png)
+
+![طلب من الموقع](screenshots/12-demande-en-ligne.png)
+
+![إدخال النتائج](screenshots/13-saisie-resultats.png)
 
 ### التثبيت
 
@@ -522,7 +638,7 @@ odoo-bin -c odoo.conf -d DATABASE -u medicalclinic --stop-after-init
 
 ### الاختبارات
 
-يغطي `tests/test_clinic.py` انتقال المواعيد، وجدول الأسبوع، وتأكيد الطبيب، والحجز عبر الموقع، والوصفة، وعلامة المختبر، وربط صورة الأشعة.
+الاختبارات في `tests/`. يغطي `test_clinic.py` المواعيد وجدول الأسبوع وتأكيد الطبيب والحجز والوصفة وعلامة المختبر والأشعة. يتحقق `test_security.py` من أن الطبيب لا يرى إلا ملفاته، وأن الاستقبال يرى كل المسودات، وأن المختبر لا يعدّل الوصفة. يفتح `test_http.py` الصفحة العامة ويرفض نتيجة مختبر بلا الرمز الصحيح.
 
 ```bash
 odoo-bin -c odoo.conf -d DATABASE -u medicalclinic --test-enable --test-tags /medicalclinic --stop-after-init
@@ -530,7 +646,7 @@ odoo-bin -c odoo.conf -d DATABASE -u medicalclinic --test-enable --test-tags /me
 
 ### تقني
 
-- إصدار الوحدة: `1.6.0`
+- إصدار الوحدة: `1.7.0`
 - الرخصة: LGPL-3
 - النماذج: `clinic.patient`, `clinic.doctor`, `clinic.appointment`, `clinic.prescription`, `clinic.prescription.line`, `clinic.medication`, `clinic.lab.request`, `clinic.lab.result.line`, `clinic.radiology.request`
 

@@ -340,6 +340,7 @@ class ClinicWeb(http.Controller):
             'state': rec.state,
             'moves': ','.join(moves),
             'actions': self._actions_for(role, 'lab', rec.state),
+            'voucher_url': self._url('/clinic/lab/%s/bon' % rec.id, roles, role) if role == 'lab' and rec.state != 'draft' else '',
         }
 
     def _columns(self, specs, records, card_builder):
@@ -452,6 +453,7 @@ class ClinicWeb(http.Controller):
             'profile_missing': False,
             'appointments': [],
             'open_dialog': kw.get('open') if kw.get('open') in ('dlg-patient', 'dlg-appointment', 'dlg-lab') else '',
+            'pending_slots': [],
         })
         values.update(self._options())
         domain = self._search_domain(q)
@@ -468,6 +470,14 @@ class ClinicWeb(http.Controller):
         elif role == 'doctor':
             profile = self._doctor_profile()
             values['profile_missing'] = not profile
+            if profile:
+                pending = request.env['clinic.slot'].search([
+                    ('doctor_id', '=', profile.id),
+                    ('state', '=', 'sent'),
+                    ('appointment_id', '=', False),
+                    ('start', '>', fields.Datetime.now()),
+                ], order='start')
+                values['pending_slots'] = self._slot_rows_for(pending, 'doctor')
             if tab == 'analyses':
                 records = request.env['clinic.lab.request'].search(domain, order='date asc', limit=BOARD_LIMIT + 1)
                 values['columns'] = self._columns(
@@ -882,6 +892,7 @@ class ClinicWeb(http.Controller):
             'can_edit_checks': role == 'doctor' and lab.state == 'draft',
             'can_edit_results': role == 'lab' and lab.state == 'in_progress',
             'pdf_url': self._url('/clinic/lab/%s/pdf' % lab.id, roles, role) if role == 'lab' else '',
+            'voucher_url': self._url('/clinic/lab/%s/bon' % lab.id, roles, role) if lab.state != 'draft' else '',
             'exams': [
                 {'check': check, 'label': label, 'detail': detail, 'checked': bool(lab[check])}
                 for check, _code, label, detail in lab.EXAM_SPECS
@@ -926,6 +937,23 @@ class ClinicWeb(http.Controller):
         if action in ('send', 'done'):
             return self._to_board(role, message=message, tab=tab)
         return self._back(role, next_url, message=message, tab=tab)
+
+    @http.route('/clinic/lab/<int:lab_id>/bon', type='http', auth='public', sitemap=False)
+    def lab_voucher(self, lab_id, **kw):
+        role = self._gate(('doctor', 'lab'))
+        if not isinstance(role, str):
+            return role
+        lab = request.env['clinic.lab.request'].search([('id', '=', lab_id)], limit=1)
+        if not lab or lab.state == 'draft':
+            return request.not_found()
+        pdf, _report_type = request.env['ir.actions.report'].sudo()._render_qweb_pdf(
+            'medicalclinic.action_report_clinic_lab_voucher', lab.ids,
+        )
+        filename = 'Bon_%s.pdf' % (lab.name or str(lab.id)).replace('/', '-').replace('\\', '-')
+        return request.make_response(pdf, headers=[
+            ('Content-Type', 'application/pdf'),
+            ('Content-Disposition', content_disposition(filename)),
+        ])
 
     @http.route('/clinic/lab/<int:lab_id>/pdf', type='http', auth='public', sitemap=False)
     def lab_pdf(self, lab_id, **kw):
@@ -1192,7 +1220,11 @@ class ClinicWeb(http.Controller):
                 raise UserError(_("Ce créneau ne vous est pas destiné."))
             slot.action_confirm()
         except (UserError, AccessError, ValidationError, ValueError) as err:
+            if kw.get('next'):
+                return self._back(role, kw.get('next'), error=self._user_error(err))
             return self._slot_redirect(role, week, error=self._user_error(err))
+        if kw.get('next'):
+            return self._back(role, kw.get('next'), message=_("Créneau confirmé."))
         return self._slot_redirect(role, week, message=_("Créneau confirmé."))
 
     @http.route('/clinic/creneaux/modifier', type='http', auth='public', methods=['POST'], sitemap=False)

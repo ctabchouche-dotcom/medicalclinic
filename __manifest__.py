@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Gestion de Clinique Médicale',
-    'version': '1.6.0',
+    'version': '1.7.0',
     'summary': 'Système complet de gestion des patients, médecins, consultations et prescriptions',
     'description': """
 Module Odoo pour la gestion d'une clinique médicale :
@@ -46,6 +46,7 @@ Module Odoo pour la gestion d'une clinique médicale :
         'views/booking_templates.xml',
         'reports/lab_report_action.xml',
         'reports/lab_report.xml',
+        'reports/lab_voucher.xml',
         'reports/prescription_report.xml',
         'reports/prescription_report_action.xml',
     ],

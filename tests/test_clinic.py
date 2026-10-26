@@ -218,6 +218,8 @@ class TestClinic(TransactionCase):
         self.assertEqual(line.flag, 'high')
         line.result = '0,90'
         self.assertEqual(line.flag, 'normal')
+        line.result = '0,50'
+        self.assertEqual(line.flag, 'low')
 
     def test_radiology_image_attaches_to_the_open_request(self):
         exam = self.env['clinic.radiology.request'].create({
@@ -234,3 +236,51 @@ class TestClinic(TransactionCase):
         self.assertEqual(linked, exam)
         self.assertEqual(linked.state, 'image_received')
         self.assertEqual(linked.study_uid, '1.2.3')
+
+    def test_radiology_image_does_not_attach_to_another_patient(self):
+        exam = self.env['clinic.radiology.request'].create({
+            'patient_id': self.patient.id,
+            'doctor_id': self.doctor.id,
+            'region': 'knee',
+            'side': 'left',
+        })
+        other = self.env['clinic.patient'].create({
+            'name': 'Yasmine Boudiaf',
+            'gender': 'female',
+            'phone': '0555000222',
+        })
+        with self.assertRaises(UserError):
+            self.env['clinic.radiology.request'].register_study(
+                other.code, 'http://cabinet.local/images/2', '9.9.9',
+            )
+        self.assertEqual(exam.state, 'requested')
+        self.assertFalse(exam.study_uid)
+
+    def test_week_grid_keeps_a_sent_slot(self):
+        start = (fields.Datetime.now() + timedelta(days=8)).replace(minute=0, second=0, microsecond=0)
+        slot = self.env['clinic.slot'].create({
+            'doctor_id': self.doctor.id,
+            'start': start,
+            'stop': start + timedelta(minutes=30),
+        })
+        slot.action_send()
+        result = self.env['clinic.slot'].apply_week(
+            self.doctor, start - timedelta(days=1), start + timedelta(days=6), [],
+        )
+        self.assertEqual(result['removed'], 0)
+        self.assertEqual(slot.state, 'sent')
+        self.assertTrue(slot.exists())
+
+    def test_a_booked_slot_cannot_be_moved(self):
+        start = fields.Datetime.now() + timedelta(days=5, hours=3)
+        slot = self.env['clinic.slot'].create({
+            'doctor_id': self.doctor.id,
+            'start': start,
+            'stop': start + timedelta(minutes=30),
+        })
+        slot.action_send()
+        slot.action_confirm()
+        self.env['clinic.appointment'].book_public(slot.id, 'Samir Khelifi', '0555121212', 'male')
+        with self.assertRaises(UserError):
+            slot.update_times(start + timedelta(hours=1), start + timedelta(hours=1, minutes=30))
+        self.assertEqual(slot.start, start)

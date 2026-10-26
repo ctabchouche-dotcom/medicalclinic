@@ -9,10 +9,18 @@
                     </div>
                     <div class="card-body">
                         <h5>Patient : <t t-out="lab_request.patient_id.name"/></h5>
+                        <p><strong>Numéro :</strong> <t t-out="lab_request.patient_id.code"/></p>
                         <p><strong>Référence :</strong> <t t-out="lab_request.name"/></p>
                         <p><strong>Date :</strong> <t t-out="lab_request.date"/></p>
                         <p><strong>Médecin Prescripteur :</strong> Dr. <t t-out="lab_request.doctor_id.name"/></p>
 
+                        <t t-if="lab_request.state != 'done'">
+                            <hr/>
+                            <h4>Analyses au laboratoire</h4>
+                            <p>Les résultats ne sont pas encore prêts. Revenez sur cette page, ou scannez à nouveau le QR code du bon, dès que le laboratoire aura validé les analyses.</p>
+                            <p><strong>Examens demandés :</strong> <t t-out="lab_request.exam_summary()"/></p>
+                        </t>
+                        <t t-else="">
                         <hr/>
                         <h4>Résultats des Analyses</h4>
                         <table class="table table-bordered table-sm mt-3">
@@ -40,6 +48,7 @@
                                 </tr>
                             </tbody>
                         </table>
+                        </t>
                     </div>
                 </div>
             </div>
